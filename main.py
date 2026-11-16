@@ -62,13 +62,37 @@ def normalize_start_items(raw_start_urls: Any) -> List[Dict[str, Any]]:
     return out
 
 
+
 def choose_label_for_url(url: str, explicit_userdata: Dict[str, Any]) -> Dict[str, Any]:
     if explicit_userdata and explicit_userdata.get("label"):
         return explicit_userdata
-    lower = url.lower()
-    if "tag" in lower or "shop" in lower or "collections" in lower:
+
+    parsed = urllib.parse.urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = parsed.path.lower()
+
+    # TikTok Shop product detail pages
+    if (
+        "/pdp/" in path
+        or "/product/" in path
+        or "/item/" in path
+    ):
+        return {"label": PRODUCT_LABEL}
+
+    # Listing and discovery pages
+    if (
+        "/tag/" in path
+        or "/collections/" in path
+        or "/category/" in path
+        or "/search" in path
+    ):
         return {"label": LISTING_LABEL}
+
+    if host.startswith("shop."):
+        return {"label": PRODUCT_LABEL}
+
     return {"label": PRODUCT_LABEL}
+
 
 
 def ms_timeouts_from_input(raw_timeouts: Dict[str, Any]) -> Dict[str, int]:
